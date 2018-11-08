@@ -7,6 +7,10 @@
 //
 
 import UIKit
+import RxSwift
+import RxCocoa
+import Action
+import RxGesture
 
 class GiphyDetailViewController: UIViewController {
     @IBOutlet weak var imageView: UIImageView!
@@ -14,10 +18,12 @@ class GiphyDetailViewController: UIViewController {
     @IBOutlet weak var ratingLabel: UILabel!
     @IBOutlet weak var sizeLabel: UILabel!
     @IBOutlet weak var copiedView: UIView!
-    var giphy: Giphy?
-    private let coordinator: Coordinator
-    init(coordinator: Coordinator) {
-        self.coordinator = coordinator
+    @IBOutlet weak var copyButton: UIButton!
+
+    private let viewModel: GiphyDetailViewModel
+    private let disposeBag =  DisposeBag()
+    init(viewModel: GiphyDetailViewModel) {
+        self.viewModel = viewModel
         super.init(nibName: GiphyDetailViewController.name, bundle: nil)
         modalPresentationStyle = .overFullScreen
         modalTransitionStyle = .coverVertical
@@ -29,43 +35,32 @@ class GiphyDetailViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tap)))
-        giphy.flatMap { configure(with: $0) }
-    }
+        view
+            .rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribeOn(MainScheduler())
+            .subscribe(onNext: { [viewModel] _ in
+                viewModel.closeAction.execute(())
+            }).disposed(by: disposeBag)
 
-    func configure(with giphy: Giphy) {
-        navigationItem.title = giphy.title
-        titleLabel.text = giphy.title
-        ratingLabel.text = giphy.rating.flatMap{ String(describing: $0.description) } ?? "Unrated"
-        sizeLabel.text = giphy.images.original.sizeDescription
-        GifCache.shared.image(for: giphy.images.fixedHeight.url) { [weak self] result in
-            switch result {
-            case .success(let image, _):
-                DispatchQueue.main.async {
-                    self?.imageView.image = image
-                }
-            case .failure(let error):
-                print(error)
+        viewModel.titleDriver.drive(navigationItem.rx.title ).disposed(by: disposeBag)
+        viewModel.titleDriver.drive(titleLabel.rx.text).disposed(by: disposeBag)
+        viewModel.gifDriver.drive(imageView.rx.image).disposed(by: disposeBag)
+        viewModel.ratingDriver.drive(ratingLabel.rx.text).disposed(by: disposeBag)
+        viewModel.sizeDriver.drive(sizeLabel.rx.text).disposed(by: disposeBag)
+        copyButton.rx.action = viewModel.copyAction
+        viewModel.copyAction.elements.asDriver(onErrorJustReturn: ()).drive(onNext:{ [copiedView] () in
+            guard let copiedView = copiedView else {
+                return
             }
-        }
+            copiedView.isHidden = false
+            UIView.animate(withDuration: 1, animations: {
+                self.copiedView.alpha = 0
+            }, completion: {_ in
+                self.copiedView.isHidden = true
+                self.copiedView.alpha = 1
+            })
+        }).disposed(by: disposeBag)
     }
-
-    @IBAction private func copyToClipBoard(_ sender: Any) {
-        guard let urlString = giphy?.images.original.url.absoluteString else {
-            return
-        }
-        UIPasteboard.general.string = urlString
-        copiedView.isHidden = false
-        UIView.animate(withDuration: 1, animations: {
-            self.copiedView.alpha = 0
-        }, completion: {_ in
-            self.copiedView.isHidden = true
-            self.copiedView.alpha = 1
-        })
-    }
-
-    @IBAction private func tap(_ sender: Any) {
-        coordinator.handle(.closeDetail)
-    }
-
 }

@@ -7,6 +7,9 @@
 //
 
 import UIKit
+import RxSwift
+import RxCocoa
+import Action
 
 class GiphyListViewController: UIViewController {
     @IBOutlet weak var collectionView: UICollectionView!
@@ -14,15 +17,15 @@ class GiphyListViewController: UIViewController {
     private var searchResults: [Giphy] = []
     private lazy var searchController: UISearchController = {
         let searchController = UISearchController(searchResultsController: nil)
-        searchController.searchBar.delegate = self
         searchController.searchBar.placeholder = "Search for new giphies..."
         searchController.hidesNavigationBarDuringPresentation = false
         searchController.dimsBackgroundDuringPresentation = false
         return searchController
     }()
-    private let coordinator: Coordinator
-    init(coordinator: Coordinator) {
-        self.coordinator = coordinator
+    private let viewModel: GiphyListViewModel
+    private let disposeBag = DisposeBag()
+    init(viewModel: GiphyListViewModel) {
+        self.viewModel = viewModel
         super.init(nibName: String(describing: GiphyListViewController.self), bundle: nil)
     }
 
@@ -38,6 +41,32 @@ class GiphyListViewController: UIViewController {
         navigationItem.searchController = searchController
         collectionView.register(UINib(nibName: GiphyCollectionViewCell.name, bundle: nil),
                                 forCellWithReuseIdentifier: GiphyCollectionViewCell.name)
+        viewModel
+            .cellViewModels
+            .drive(collectionView
+                .rx
+                .items(cellIdentifier: GiphyCollectionViewCell.name, cellType: GiphyCollectionViewCell.self)) { indexPath, viewModel, cell in
+                    cell.configure(with: viewModel)
+            }.disposed(by: disposeBag)
+
+        collectionView
+            .rx
+            .modelSelected(GiphyCellViewModel.self)
+            .observeOn(MainScheduler())
+            .subscribe(onNext: { (cellViewModel: GiphyCellViewModel) in
+                let action = cellViewModel.selectAction
+                action.execute(())
+            }).disposed(by: disposeBag)
+
+        searchController
+        .searchBar
+        .rx
+        .text
+        .orEmpty
+        .debounce(0.25, scheduler: MainScheduler())
+        .distinctUntilChanged()
+        .bind(to: viewModel.searchText)
+        .disposed(by: disposeBag)
     }
 
     override func viewDidLayoutSubviews() {
@@ -54,42 +83,3 @@ class GiphyListViewController: UIViewController {
     }
 }
 
-extension GiphyListViewController: UICollectionViewDataSource {
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: GiphyCollectionViewCell.reuseIdentifier, for: indexPath)
-        (cell as? GiphyCollectionViewCell)?.configure(with: searchResults[indexPath.row])
-        return cell
-    }
-
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return searchResults.count
-    }
-}
-
-extension GiphyListViewController: UICollectionViewDelegate {
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        coordinator.handle(.showDetail(searchResults[indexPath.row]))
-    }
-}
-
-extension GiphyListViewController: UISearchBarDelegate {
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        self.collectionView.reloadData()
-        APIService.getSearchResults(term: searchBar.text ?? "", page: 0) { [weak self] result in
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else {
-                    return
-                }
-                switch result {
-                case .success(let page):
-                    self.searchResults.removeAll()
-                    self.searchResults.append(contentsOf: page.data)
-                    self.collectionView.reloadData()
-                    self.collectionView.contentOffset = .zero
-                case .failure(let error):
-                    print(error.localizedDescription)
-                }
-            }
-        }
-    }
-}

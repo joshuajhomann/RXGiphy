@@ -20,6 +20,15 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         let formatter = DateFormatter()
         formatter.timeStyle = .medium
+
+
+        let timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [text] _ in
+            text.accept(formatter.string(from: Date()))
+        }
+
+        text.asDriver().drive(label.rx.text).disposed(by: bag)
+
+
     }
 
     deinit {

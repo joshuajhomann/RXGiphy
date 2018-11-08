@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14313.18" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14460.31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina4_7" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14283.14"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14460.20"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -12,6 +12,7 @@
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="GiphyDetailViewController" customModule="RxGiphy" customModuleProvider="target">
             <connections>
                 <outlet property="copiedView" destination="ZQ8-6W-F2x" id="rIo-Jx-bvm"/>
+                <outlet property="copyButton" destination="h3x-nN-Ly3" id="4tn-93-RcJ"/>
                 <outlet property="imageView" destination="LDo-ky-Kul" id="adY-w0-IAv"/>
                 <outlet property="ratingLabel" destination="qfZ-dM-OWT" id="dKD-Jg-k6q"/>
                 <outlet property="sizeLabel" destination="FP7-U1-gHE" id="nqS-V5-5hO"/>
@@ -89,9 +90,6 @@
                                     <integer key="value" value="12"/>
                                 </userDefinedRuntimeAttribute>
                             </userDefinedRuntimeAttributes>
-                            <connections>
-                                <action selector="copyToClipBoard:" destination="-1" eventType="touchUpInside" id="dc3-p1-5xn"/>
-                            </connections>
                         </button>
                     </subviews>
                 </stackView>

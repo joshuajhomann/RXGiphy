@@ -7,33 +7,33 @@
 //
 
 import UIKit
+import RxCocoa
+import RxSwift
+import Action
 
 class GiphyCollectionViewCell: UICollectionViewCell {
     @IBOutlet weak var gifImageView: UIImageView!
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var ratingLabel: UILabel!
     @IBOutlet weak var sizeLabel: UILabel!
-
-    func configure(with giphy: Giphy) {
-        titleLabel.text = giphy.title
-        ratingLabel.text = giphy.rating.flatMap{ String(describing: $0.description) } ?? "Unrated"
-        sizeLabel.text = giphy.images.original.sizeDescription
-        GifCache.shared.image(for: giphy.images.fixedHeight.url) { [weak self] result in
-            switch result {
-            case .success(let image, let downloadedURL):
-                guard downloadedURL == giphy.images.fixedHeight.url else {
-                    return
-                }
-                DispatchQueue.main.async {
-                    self?.gifImageView.image = image
-                }
-            case .failure:
-                break
-            }
-        }
+    var viewModel: GiphyCellViewModel?
+    private var disposeBag: DisposeBag?
+    func configure(with viewModel: GiphyCellViewModel) {
+        let disposeBag = DisposeBag()
+        viewModel.titleDriver.drive(titleLabel.rx.text).disposed(by: disposeBag)
+        viewModel.ratingDriver.drive(ratingLabel.rx.text).disposed(by: disposeBag)
+        viewModel.ratingColorDriver.drive(onNext: { [ratingLabel] color in
+            ratingLabel?.textColor = color
+        }).disposed(by: disposeBag)
+        viewModel.sizeDriver.drive(sizeLabel.rx.text).disposed(by: disposeBag)
+        viewModel.gifDriver.drive(gifImageView.rx.image).disposed(by: disposeBag)
+        self.viewModel = viewModel
+        self.disposeBag = disposeBag
     }
     override func prepareForReuse() {
         super.prepareForReuse()
-        gifImageView.image = nil
+        disposeBag = nil
+        viewModel = nil
     }
+
 }

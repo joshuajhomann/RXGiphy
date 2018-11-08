@@ -16,13 +16,13 @@ struct GiphyContainer: Codable {
     var data: Giphy
 }
 
-struct Giphy: Codable {
+struct Giphy: Codable, Equatable {
     var id: String
     var rating: Rating?
     var images: Images
     var title: String
 
-    struct Images: Codable {
+    struct Images: Codable, Equatable {
         var original: Info
         var fixedHeight: Info
         enum CodingKeys: String, CodingKey {
@@ -30,11 +30,11 @@ struct Giphy: Codable {
             case fixedHeight = "fixed_height"
         }
 
-        struct Info: Codable {
+        struct Info: Codable, Equatable {
             var url: URL
             var size: Int
             var sizeDescription: String {
-               return ByteCountFormatter.fileSizeFormatter.string(fromByteCount: Int64(size))
+                return ByteCountFormatter.fileSizeFormatter.string(fromByteCount: Int64(size))
             }
 
             enum CodingKeys: String, CodingKey {
@@ -48,7 +48,7 @@ struct Giphy: Codable {
                 let sizeString = try values.decode(String.self, forKey: .size)
                 size = Int(sizeString) ?? 0
             }
-            
+
             func encode(to encoder: Encoder) throws
             {
                 var container = encoder.container(keyedBy: CodingKeys.self)
@@ -58,7 +58,7 @@ struct Giphy: Codable {
         }
     }
 
-    enum Rating: String, Codable, CustomStringConvertible {
+    enum Rating: String, Codable, CustomStringConvertible, Equatable {
         case g, pg, pg13 = "pg-13", r, y
         var description: String {
             switch self {
@@ -76,5 +76,26 @@ struct Giphy: Codable {
         }
     }
 
+    static let sampleJSON = """
+    {
+      "id" : "JIX9t2j0ZTN9S",
+      "title" : "funny cat GIF",
+      "images" : {
+        "original" : {
+          "url" : "https://media3.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif?cid=e1bb72ff5be0f080613163437387c44d",
+          "size" : "7712339"
+        },
+        "fixed_height" : {
+          "url" : "https://media3.giphy.com/media/JIX9t2j0ZTN9S/200.gif?cid=e1bb72ff5be0f080613163437387c44d",
+          "size" : "632576"
+        }
+      },
+      "rating" : "g"
+    }
+    """
+
+    static var sample: Giphy {
+        return try! JSONDecoder().decode(Giphy.self, from: Giphy.sampleJSON.data(using: .utf8)!)
+    }
 }
 

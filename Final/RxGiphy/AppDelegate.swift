@@ -8,11 +8,18 @@
 
 import UIKit
 
+struct Dependencies {
+    let giphyService = GiphyService()
+    let gifCacheService = GifCacheService()
+}
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
+
     let window = UIWindow(frame: UIScreen.main.bounds)
-    let coordinator = Coordinator(initialAction: .showSearch)
+    let coordinator = Coordinator(initialAction: .showSearch, dependencies: Dependencies())
+
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         window.rootViewController = coordinator.navigationController
